@@ -1,6 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
-
+import twilio from "twilio";
 
 const app = express();
 
@@ -19,12 +19,12 @@ app.post("/message", async (req, res) => {
 try {
 const incomingMsg = req.body.Body || "Hola";
 
-const gptResponse = await fetch(
+const response = await fetch(
 "https://api.openai.com/v1/chat/completions",
 {
 method: "POST",
 headers: {
-"Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
 "Content-Type": "application/json",
 },
 body: JSON.stringify({
@@ -33,40 +33,35 @@ messages: [
 {
 role: "system",
 content:
-"Eres un asistente profesional para una compañía de remodelación. Responde claro, amable y profesional.",
+"Eres un asistente profesional para una compañía de remodelación.",
 },
-{
-role: "user",
-content: incomingMsg,
-},
+{ role: "user", content: incomingMsg },
 ],
 }),
 }
 );
 
-const data = await gptResponse.json();
-
+const data = await response.json();
 const reply =
-data?.choices?.[0]?.message?.content ||
-"Gracias por tu mensaje. En breve te atendemos.";
+data.choices?.[0]?.message?.content ||
+"Gracias por tu mensaje.";
+
+const twiml = new twilio.twiml.MessagingResponse();
+twiml.message(reply);
 
 res.set("Content-Type", "text/xml");
-res.send(`
-<Response>
-<Message>${reply}</Message>
-</Response>
-`);
+res.send(twiml.toString());
 } catch (error) {
 console.error(error);
+
+const twiml = new twilio.twiml.MessagingResponse();
+twiml.message("Ocurrió un error, intenta nuevamente.");
+
 res.set("Content-Type", "text/xml");
-res.send(`
-<Response>
-<Message>Ocurrió un error. Intenta nuevamente.</Message>
-</Response>
-`);
+res.send(twiml.toString());
 }
 });
 
 app.listen(PORT, () => {
-console.log("Server running on port", PORT);
+console.log(`Server running on port ${PORT}`);
 });
