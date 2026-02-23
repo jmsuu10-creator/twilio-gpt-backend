@@ -19,14 +19,15 @@ res.send("Twilio GPT Backend is running 🚀");
 });
 
 // Send WhatsApp message
-app.post("/message", async (req, res) => {
-const { to, body } = req.body;
+app.post('/message', (req, res) => {
+console.log('Incoming WhatsApp message:', req.body);
 
-try {
-const message = await client.messages.create({
-from: `whatsapp:${TWILIO_WHATSAPP_NUMBER}`,
-to: `whatsapp:${to}`,
-body: body
+res.set('Content-Type', 'text/xml');
+res.send(`
+<Response>
+<Message>Hola 👋 Tu servidor ya está conectado correctamente 🚀</Message>
+</Response>
+`);
 });
 
 res.json({ success: true, sid: message.sid });
