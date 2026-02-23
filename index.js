@@ -1,8 +1,9 @@
 import express from "express";
 import bodyParser from "body-parser";
-import twilio from "twilio";
+import fetch from "node-fetch";
 
 const app = express();
+
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -13,17 +14,17 @@ app.get("/", (req, res) => {
 res.send("Twilio GPT Backend is running 🚀");
 });
 
-// ===== WHATSAPP INBOUND (GPT) =====
+// WhatsApp inbound
 app.post("/message", async (req, res) => {
 try {
-const incomingMsg = req.body.Body || "";
+const incomingMsg = req.body.Body || "Hola";
 
 const gptResponse = await fetch(
 "https://api.openai.com/v1/chat/completions",
 {
 method: "POST",
 headers: {
-Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+"Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
 "Content-Type": "application/json",
 },
 body: JSON.stringify({
@@ -32,45 +33,40 @@ messages: [
 {
 role: "system",
 content:
-"Eres un asistente profesional para una compañía de remodelación. Responde claro, corto y en español.",
+"Eres un asistente profesional para una compañía de remodelación. Responde claro, amable y profesional.",
 },
-{ role: "user", content: incomingMsg },
+{
+role: "user",
+content: incomingMsg,
+},
 ],
-temperature: 0.4,
 }),
 }
 );
 
 const data = await gptResponse.json();
+
 const reply =
 data?.choices?.[0]?.message?.content ||
-"No pude responder en este momento.";
+"Gracias por tu mensaje. En breve te atendemos.";
 
 res.set("Content-Type", "text/xml");
 res.send(`
 <Response>
-<Message>${escapeXml(reply)}</Message>
+<Message>${reply}</Message>
 </Response>
 `);
 } catch (error) {
+console.error(error);
 res.set("Content-Type", "text/xml");
 res.send(`
 <Response>
-<Message>⚠️ Error del servidor. Intenta de nuevo.</Message>
+<Message>Ocurrió un error. Intenta nuevamente.</Message>
 </Response>
 `);
 }
 });
 
-function escapeXml(text) {
-return text
-.replace(/&/g, "&amp;")
-.replace(/</g, "&lt;")
-.replace(/>/g, "&gt;")
-.replace(/"/g, "&quot;")
-.replace(/'/g, "&apos;");
-}
-
 app.listen(PORT, () => {
-console.log(`Server running on port ${PORT}`);
+console.log("Server running on port", PORT);
 });
