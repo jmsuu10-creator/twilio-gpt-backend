@@ -1,9 +1,9 @@
 import express from "express";
 import bodyParser from "body-parser";
-import fetch fron "node-fetch";
-import twilio from "twilio";
+
 const app = express();
 
+// Twilio manda x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -11,57 +11,48 @@ const PORT = process.env.PORT || 3000;
 
 // Health check
 app.get("/", (req, res) => {
-res.send("Twilio GPT Backend is running 🚀");
+res.status(200).send("Twilio GPT Backend is running 🚀");
 });
 
-// WhatsApp inbound
+// WhatsApp inbound webhook
 app.post("/message", async (req, res) => {
 try {
-const incomingMsg = req.body.Body || "Hola";
+const incomingMsg = (req.body?.Body || "").trim();
 
-const response = await fetch(
-"https://api.openai.com/v1/chat/completions",
-{
-method: "POST",
-headers: {
-Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-"Content-Type": "application/json",
-},
-body: JSON.stringify({
-model: "gpt-4o-mini",
-messages: [
-{
-role: "system",
-content:
-"Eres un asistente profesional para una compañía de remodelación.",
-},
-{ role: "user", content: incomingMsg },
-],
-}),
-}
-);
+// Respuesta simple (para probar que funciona)
+const replyText = incomingMsg
+? `✅ Recibido: "${incomingMsg}". Estoy conectado.`
+: "✅ Conectado. Envíame un mensaje.";
 
-const data = await response.json();
-const reply =
-data.choices?.[0]?.message?.content ||
-"Gracias por tu mensaje.";
-
-const twiml = new twilio.twiml.MessagingResponse();
-twiml.message(reply);
+// TwiML (NO necesita twilio SDK)
+const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+<Message>${escapeXml(replyText)}</Message>
+</Response>`;
 
 res.set("Content-Type", "text/xml");
-res.send(twiml.toString());
-} catch (error) {
-console.error(error);
+return res.status(200).send(twiml);
+} catch (err) {
+console.error("Webhook error:", err);
 
-const twiml = new twilio.twiml.MessagingResponse();
-twiml.message("Ocurrió un error, intenta nuevamente.");
+const twiml = `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+<Message>⚠️ Error interno. Intenta de nuevo.</Message>
+</Response>`;
 
 res.set("Content-Type", "text/xml");
-res.send(twiml.toString());
+return res.status(200).send(twiml);
 }
 });
 
-app.listen(PORT, () => {
-console.log(`Server running on port ${PORT}`);
-});
+// Helper: evita romper XML si hay comillas, & etc.
+function escapeXml(unsafe) {
+return unsafe
+.replaceAll("&", "&amp;")
+.replaceAll("<", "&lt;")
+.replaceAll(">", "&gt;")
+.replaceAll('"', "&quot;")
+.replaceAll("'", "&apos;");
+}
+
+app.listen(PORT, () => console.log("Server running on port", PORT));
