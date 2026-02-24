@@ -1,15 +1,1 @@
-{
-  "name": "twilio-gpt-backend",
-  "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2",
-    "twilio": "^4.23.0",
-    "node-fetch": "^3.3.2"
-  }
-}
+{"name":"twilio-gpt-backend","version":"1.0.0","type":"module","main":"index.js","scripts":{"start":"node index.js"},"dependencies":{"express":"^4.18.2","body-parser":"^1.20.2","twilio":"^4.23.0","node-fetch":"^3.3.2"}}
